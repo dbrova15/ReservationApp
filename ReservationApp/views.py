@@ -9,17 +9,6 @@ from ReservationApp.models import TableList, Booking
 width_hall = 600
 height_hall = 300
 
-
-def send_mail_task(recipients, subject, template, context):
-    send_mail(
-        subject=subject,
-        message=render_template(f'{template}.txt', context),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=recipients,
-        fail_silently=False,
-        html_message=render_template(f'{template}.html', context)
-    )
-
 def get_data_list(list_tables, data_time_req):
 
     data_list = []
