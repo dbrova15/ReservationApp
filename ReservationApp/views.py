@@ -2,7 +2,7 @@
 import datetime
 
 from django.http import HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 # Create your views here.
 from django.urls import reverse
@@ -16,6 +16,7 @@ height_hall = 300
 
 
 def get_data_list(list_tables, data_time_req):
+
     data_list = []
     for data in list_tables:
         namber_table = data.namber_of_table
@@ -26,7 +27,7 @@ def get_data_list(list_tables, data_time_req):
         top = height_hall / 100 * data.position_y
         circle_type = data.circle_type
         booking_obj = Booking.objects.filter(namber_table=namber_table, date_time=data_time_req).first()
-        print(booking_obj)
+        # print(booking_obj.status)
         if booking_obj is None or booking_obj.status == 0:
             color = "green"
             href_status = """/set_status/n_table={namber_table}&status={status}&date_time={data_time_req}&email_client={email}""".format(
@@ -59,7 +60,8 @@ def get_data_list(list_tables, data_time_req):
                  
                 </div></a>""".format(width_circle=width_circle, height_circle=height_circle,
                                      left=left, top=top,
-                                     namber_table=namber_table, namber_of_seats=namber_of_seats, color=color, href_status=href_status)
+                                     namber_table=namber_table, namber_of_seats=namber_of_seats, color=color,
+                                     href_status=href_status)
         else:
             # <a href="/set_status/n_table={namber_table}/status={status}/date_time={data_time_req}/email_client="">
             table = """
@@ -85,35 +87,54 @@ def get_data_list(list_tables, data_time_req):
     return data_list
 
 
-def hall_layout(request):
-    form = DateForm()
-    form_booking = None
+def hall_layout(request, data_time_req=datetime.date.today()):
+    # request.POST['data_time_req'] = data_time_req
 
+    form_booking = None
+    if type(data_time_req) is str:
+        data_time_req = datetime.datetime.strptime(data_time_req, '%Y-%m-%d').date()
     if request.method == 'POST':
         form = DateForm(request.POST)
         if form.is_valid():
             data_time_req = form.cleaned_data['data_time_req']
-        else:
-            data_time_req = datetime.date.today()
-    else:
-        # if form.data_time_req
-        data_time_req = datetime.date.today()
-    # print(data_time_req)
+
+    form = DateForm(initial={"data_time_req": data_time_req})
+
+    before_date = data_time_req - datetime.timedelta(days=1)
+    after_date = data_time_req + datetime.timedelta(days=1)
     booking_status_list = [i.status for i in Booking.objects.filter(date_time=data_time_req).all()]
     if 1 in booking_status_list:
-        form_booking = BookingForm()
+        if request.method == 'POST':
+            form_booking = BookingForm(request.POST)
+            if form_booking.is_valid():
+                email_client = form_booking.cleaned_data['email_fild']
+                list_tables = TableList.objects.all()
+                for data in list_tables:
+                    n_table = data.namber_of_table
+                    booking_obj = Booking.objects.filter(namber_table=n_table, date_time=data_time_req).first()
+                    if not booking_obj:
+                        continue
+                    status = booking_obj.status
+                    # print(status)
+                    if status == 1:
+                        booking_obj.status = 2
+                        booking_obj.email_client = email_client
+                        booking_obj.save()
+                        # data = Booking(namber_table=n_table, status=2, email_client=email_client, date_time=data_time_req)
+                        # data.save()
 
+        form_booking = BookingForm()
     list_tables = TableList.objects.all()
 
     data_list = get_data_list(list_tables, data_time_req)
 
     return render(request, 'Reservation/hall.html',
                   {"width_hall": width_hall, 'form': form, "form_booking": form_booking, "height_hall": height_hall,
-                   'data_list': data_list})
+                   'data_list': data_list, "before_date": before_date.strftime('%Y-%m-%d'),
+                   "after_date": after_date.strftime('%Y-%m-%d')})
 
 
 def set_status_table(request, n_table, status, date_time, email_client):
-    # print(n_table, status, date_time, email_client)
     date_time_obj = datetime.datetime.strptime(date_time, '%Y-%m-%d')
     obj_booking = Booking.objects.filter(namber_table=n_table, date_time=date_time_obj).first()
     if not obj_booking:
@@ -127,4 +148,7 @@ def set_status_table(request, n_table, status, date_time, email_client):
         obj_booking.save()
     # form = DateForm(request.POST)
     # form.data_time_req = date_time
-    return HttpResponseRedirect('/')
+    # url = reverse('hall_layout_date', kwargs={'date_time': date_time})
+    # return redirect('hall_layout_date', data_time_req=date_time)
+    return redirect("/date/{}".format(date_time))
+    # return HttpResponseRedirect(url)

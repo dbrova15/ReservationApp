@@ -40,6 +40,6 @@ class Booking(models.Model):
     namber_table = models.IntegerField(help_text="Enter namber of seats", default=None)
     status = models.IntegerField(
         help_text="Enter status of table. 0 - free, 1 select table, 3 - booked", default=0)
-    email_client = models.EmailField(help_text="Customer Email for Booking Notification", null=True, unique=True,
+    email_client = models.EmailField(help_text="Customer Email for Booking Notification", null=True, unique=False,
                                      blank=True, default="test")
     date_time = models.DateField(blank=True, help_text="")
