@@ -2,15 +2,16 @@
 import datetime
 
 from django.shortcuts import render, redirect
-from django.core.mail import send_mail
 from ReservationApp.forms import DateForm, BookingForm
 from ReservationApp.models import TableList, Booking
+from django.conf import settings
+from django.core.mail import send_mail
 
 width_hall = 600
 height_hall = 300
 
-def get_data_list(list_tables, data_time_req):
 
+def get_data_list(list_tables, data_time_req):
     data_list = []
     for data in list_tables:
         namber_table = data.namber_of_table
@@ -81,7 +82,6 @@ def get_data_list(list_tables, data_time_req):
 
 
 def hall_layout(request, data_time_req=datetime.date.today()):
-
     form_booking = None
     if type(data_time_req) is str:
         data_time_req = datetime.datetime.strptime(data_time_req, '%Y-%m-%d').date()
@@ -111,8 +111,13 @@ def hall_layout(request, data_time_req=datetime.date.today()):
                         booking_obj.status = 2
                         booking_obj.email_client = email_client
                         booking_obj.save()
-                        send_mail('Заказ столика', 'Вы заказали столик № {}.'.format(n_table), email_client,
-                                  [email_client], fail_silently=False)
+
+                        subject = 'Заказ столика'
+                        message = 'Вы заказали столик № {}.'.format(n_table)
+                        email_from = settings.EMAIL_HOST_USER
+                        recipient_list = [email_client, ]
+
+                        send_mail(subject, message, email_from, recipient_list)
 
         form_booking = BookingForm()
     list_tables = TableList.objects.all()
