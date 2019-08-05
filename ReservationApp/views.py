@@ -1,12 +1,7 @@
 # import Markup as Markup
 import datetime
 
-from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
-
-# Create your views here.
-from django.urls import reverse
-from django.utils import timezone
 
 from ReservationApp.forms import DateForm, BookingForm
 from ReservationApp.models import TableList, Booking
@@ -27,7 +22,7 @@ def get_data_list(list_tables, data_time_req):
         top = height_hall / 100 * data.position_y
         circle_type = data.circle_type
         booking_obj = Booking.objects.filter(namber_table=namber_table, date_time=data_time_req).first()
-        # print(booking_obj.status)
+
         if booking_obj is None or booking_obj.status == 0:
             color = "green"
             href_status = """/set_status/n_table={namber_table}&status={status}&date_time={data_time_req}&email_client={email}""".format(
@@ -63,7 +58,6 @@ def get_data_list(list_tables, data_time_req):
                                      namber_table=namber_table, namber_of_seats=namber_of_seats, color=color,
                                      href_status=href_status)
         else:
-            # <a href="/set_status/n_table={namber_table}/status={status}/date_time={data_time_req}/email_client="">
             table = """
             <a href="{href_status}">
                 <div id="rectangle " style="width:{width_circle}px;
@@ -88,7 +82,6 @@ def get_data_list(list_tables, data_time_req):
 
 
 def hall_layout(request, data_time_req=datetime.date.today()):
-    # request.POST['data_time_req'] = data_time_req
 
     form_booking = None
     if type(data_time_req) is str:
@@ -115,13 +108,10 @@ def hall_layout(request, data_time_req=datetime.date.today()):
                     if not booking_obj:
                         continue
                     status = booking_obj.status
-                    # print(status)
                     if status == 1:
                         booking_obj.status = 2
                         booking_obj.email_client = email_client
                         booking_obj.save()
-                        # data = Booking(namber_table=n_table, status=2, email_client=email_client, date_time=data_time_req)
-                        # data.save()
 
         form_booking = BookingForm()
     list_tables = TableList.objects.all()
@@ -146,9 +136,4 @@ def set_status_table(request, n_table, status, date_time, email_client):
     else:
         obj_booking.status = status
         obj_booking.save()
-    # form = DateForm(request.POST)
-    # form.data_time_req = date_time
-    # url = reverse('hall_layout_date', kwargs={'date_time': date_time})
-    # return redirect('hall_layout_date', data_time_req=date_time)
     return redirect("/date/{}".format(date_time))
-    # return HttpResponseRedirect(url)
